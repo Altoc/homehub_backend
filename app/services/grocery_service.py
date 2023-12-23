@@ -1,24 +1,32 @@
 from fastapi import APIRouter
 from typing import Union
-from app.models.grocery_list import Item
+from datetime import date
+from app.models.grocery_list import GroceryList
 
 router = APIRouter()
 
-@router.get("/items/{item_id}")
+@router.get("/list/{item_id}")
 def read_item(item_id: int, q: Union[str, None] = None):
-    item_data = {
-        "name": "Example Item",
-        "price": 19.99,
-        "is_offer": True
+    """
+    Returns a grocery list for a given user.
+    If no user is supplied, returns all grocery lists.
+
+    Returns:
+    a grocery list for a given user.
+    """
+    grocery_list_data = {
+        "date": date.today(),
+        "name": "Example Grocery List",
+        "active": True
     }
-    return Item(**item_data)
+    return GroceryList(**grocery_list_data)
 
-@router.put("/items/{item_id}")
-def update_item(item_id: int, item: Item):
-    return {"item_name": item.name, "item_id": item_id}
+@router.put("/list/{item_id}")
+def update_grocery_list(item_id: int, grocery_list: GroceryList):
+    return {"grocery_list_name": grocery_list.name, "grocery_list_id": item_id}
 
-@router.post("/items")
-def create_item(item: Item):
-    # In a real application, you might want to store the created item in a database.
+@router.post("/list")
+def create_grocery_list(grocery_list: GroceryList):
+    # In a real application, you might want to store the created grocery list in a database.
     # For simplicity, we'll just return the received data in the response.
-    return {"message": "Item created successfully", "item": item}
+    return {"message": "Grocery list created successfully", "grocery_list": grocery_list}

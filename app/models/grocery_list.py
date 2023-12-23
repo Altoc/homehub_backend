@@ -1,7 +1,7 @@
 from pydantic import BaseModel
-from typing import Union
+from datetime import date
 
-class Item(BaseModel):
+class GroceryList(BaseModel):
+    date: date
     name: str
-    price: float
-    is_offer: Union[bool, None] = None
+    active: bool
