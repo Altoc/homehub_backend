@@ -1,21 +1,22 @@
 from fastapi import Depends, APIRouter
 from typing import Union
 from datetime import date
-from sqlalchemy.orm import Session
+import asyncio
+from databases import Database
 from database.database import connect_to_database, get_active_grocery_lists
 from app.models.grocery_list import Base, GroceryList
 
 router = APIRouter()
 
 # Dependency to get the database session
-def get_db():
-    with connect_to_database() as db:
-        yield db
+async def get_db():
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(None, connect_to_database)
 
 # Route to retrieve active grocery lists
 @router.get("/list/active_grocery_lists")
-def read_active_grocery_lists(db: Session = Depends(get_db)):
-    active_grocery_lists = get_active_grocery_lists(db)
+async def read_active_grocery_lists(db: Database = Depends(connect_to_database)):
+    active_grocery_lists = await get_active_grocery_lists(db)
     return {"active_grocery_lists": active_grocery_lists}
 
 @router.get("/list/{item_id}")
