@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
 from app.services.grocery_service import router as grocery_router
 
 app = FastAPI()

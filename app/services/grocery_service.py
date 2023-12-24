@@ -1,18 +1,28 @@
-from fastapi import APIRouter
+from fastapi import Depends, APIRouter
 from typing import Union
 from datetime import date
-from app.models.grocery_list import GroceryList
+from sqlalchemy.orm import Session
+from database.database import connect_to_database, get_active_grocery_lists
+from app.models.grocery_list import Base, GroceryList
 
 router = APIRouter()
+
+# Dependency to get the database session
+def get_db():
+    with connect_to_database() as db:
+        yield db
+
+# Route to retrieve active grocery lists
+@router.get("/list/active_grocery_lists")
+def read_active_grocery_lists(db: Session = Depends(get_db)):
+    active_grocery_lists = get_active_grocery_lists(db)
+    return {"active_grocery_lists": active_grocery_lists}
 
 @router.get("/list/{item_id}")
 def read_item(item_id: int, q: Union[str, None] = None):
     """
     Returns a grocery list for a given user.
     If no user is supplied, returns all grocery lists.
-
-    Returns:
-    a grocery list for a given user.
     """
     grocery_list_data = {
         "date": date.today(),
