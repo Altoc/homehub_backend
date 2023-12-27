@@ -28,8 +28,9 @@ async def deactivate_grocery_list_endpoint(list_id: int, db: Database = Depends(
     else:
         raise HTTPException(status_code=404, detail="Grocery list not found")
 
-@router.post("/list")
-def create_grocery_list(grocery_list: GroceryList):
-    # In a real application, you might want to store the created grocery list in a database.
-    # For simplicity, we'll just return the received data in the response.
-    return {"message": "Grocery list created successfully", "grocery_list": grocery_list}
+# IPW TODO: Need to have the body of this be items to add to the list.
+# Will need to add items to the db table GROCERY_ITEMS with references to 
+# This grocery list ID
+@router.put("/list/edit/{list_id}")
+def edit_grocery_list_endpoint(grocery_list: GroceryList):
+    return {"message": "Grocery list editted successfully", "grocery_list": grocery_list}
