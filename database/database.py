@@ -1,11 +1,18 @@
 from databases import Database
-from sqlalchemy import create_engine, MetaData
+from sqlalchemy import create_engine, MetaData, select
+import logging
 from app.models.grocery_list import GroceryListDB, Base
+from app.models.grocery_item import GroceryItemDB, Base
 
 DATABASE_URL = "sqlite:///./database/data/database.db"
-database = Database(DATABASE_URL)
+# database = Database(DATABASE_URL)
 
-engine = create_engine(DATABASE_URL)
+# Configure logging
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
+engine = create_engine(DATABASE_URL, echo=True)
+dialect = engine.dialect
 metadata = MetaData()
 
 async def connect_to_database():
@@ -42,6 +49,43 @@ async def deactivate_grocery_list(db, list_id):
     updated_grocery_list = await db.fetch_one(GroceryListDB.__table__.select().where(GroceryListDB.__table__.c.id == list_id))
     return updated_grocery_list
 
+async def add_items_to_grocery_list(db, list_id: int, items: list):
+    """
+    Adds items to a grocery list identified by list_id.
+    """
+    try:
+        # Check if the grocery list exists
+        query = select(GroceryListDB).where(GroceryListDB.id == list_id)
+        grocery_list = await db.fetch_one(query)
+
+        if grocery_list:
+            # Assuming you have a table object defined for GroceryItemDB
+            grocery_item_table = GroceryItemDB.__table__
+
+            # Create GroceryItemDB instances for the new items
+            new_items = [{"name": item, "list_id": list_id} for item in items]
+
+            # Get the compiled SQL statement and parameters
+            insert_query = grocery_item_table.insert().values(new_items)
+            compiled_query = insert_query.compile()
+            compiled_sql = str(compiled_query)
+            parameters = [item for sublist in new_items for item in sublist.values()]
+
+            logger.debug("Insert query: %s", compiled_sql)
+            logger.debug("Parameters: %s", parameters)
+
+            # Insert the new items into the GROCERY_ITEM table
+            await db.execute(insert_query)
+
+            # Commit the changes
+            # await db.commit()
+
+            return {"message": "Items added to grocery list successfully"}
+
+        return {"message": "Grocery list not found"}
+
+    except Exception as e:
+        return {"error": str(e)}
 
 async def disconnect_from_database(db):
     """

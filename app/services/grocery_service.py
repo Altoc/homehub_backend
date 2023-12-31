@@ -1,10 +1,6 @@
-from fastapi import Depends, APIRouter
-from typing import Union
-from datetime import date
-import asyncio
+from fastapi import Depends, APIRouter, Request
 from databases import Database
-from database.database import connect_to_database, get_active_grocery_lists, deactivate_grocery_list
-from app.models.grocery_list import Base, GroceryList
+from database.database import connect_to_database, get_active_grocery_lists, deactivate_grocery_list, add_items_to_grocery_list
 
 router = APIRouter()
 
@@ -28,9 +24,12 @@ async def deactivate_grocery_list_endpoint(list_id: int, db: Database = Depends(
     else:
         raise HTTPException(status_code=404, detail="Grocery list not found")
 
-# IPW TODO: Need to have the body of this be items to add to the list.
-# Will need to add items to the db table GROCERY_ITEMS with references to 
-# This grocery list ID
 @router.put("/list/edit/{list_id}")
-def edit_grocery_list_endpoint(grocery_list: GroceryList):
-    return {"message": "Grocery list editted successfully", "grocery_list": grocery_list}
+async def edit_grocery_list_endpoint(list_id: int, request: Request, db: Database = Depends(connect_to_database)):
+    # Assuming the items are in the request body as a JSON object
+    request_body = await request.json()
+    items = request_body.get("items", [])
+
+    await add_items_to_grocery_list(db, list_id, items)
+
+    return {"message": f"Grocery list edited successfully with items: {items}", "list_id": list_id}
