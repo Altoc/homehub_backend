@@ -1,6 +1,7 @@
 from fastapi import Depends, APIRouter, Request
 from databases import Database
-from database.database import connect_to_database, get_active_grocery_lists, deactivate_grocery_list, add_items_to_grocery_list
+from datetime import datetime, timezone
+from database.database import connect_to_database, create_grocery_list, get_active_grocery_lists, deactivate_grocery_list, add_items_to_grocery_list
 
 router = APIRouter()
 
@@ -14,6 +15,24 @@ router = APIRouter()
 async def read_active_grocery_lists_endpoint(db: Database = Depends(connect_to_database)):
     active_grocery_lists = await get_active_grocery_lists(db)
     return {"active_grocery_lists": active_grocery_lists}
+
+@router.post("/list/create")
+async def create_grocery_list_endpoint(request: Request, db: Database = Depends(connect_to_database)):
+    request_body = await request.json()
+    name = request_body.get("name", "")
+    items = request_body.get("items", [])
+
+    if not name:
+        raise HTTPException(status_code=400, detail="Name is required for creating a grocery list")
+
+    created_grocery_list = await create_grocery_list(db, name, items)
+    
+    created_at = created_grocery_list.get("created_at", datetime.utcnow().replace(tzinfo=timezone.utc).isoformat())
+
+    return {
+        "message": f"Grocery list created successfully with name: {name}, items: {items}, and date: {created_at}",
+        "created_grocery_list": created_grocery_list
+    }
 
 # Route to deactivate a grocery list
 @router.put("/list/deactivate/{list_id}")

@@ -1,5 +1,6 @@
 from databases import Database
-from sqlalchemy import create_engine, MetaData, select
+from sqlalchemy import func, create_engine, MetaData, select
+from datetime import datetime
 import logging
 from app.models.grocery_list import GroceryListDB, Base
 from app.models.grocery_item import GroceryItemDB, Base
@@ -35,6 +36,25 @@ async def get_active_grocery_lists(db):
     query = GroceryListDB.__table__.select().where(GroceryListDB.__table__.c.active_flag == True)
     result = await db.fetch_all(query)
     return result
+
+async def create_grocery_list(db, name: str, items: list):
+    """
+    Create a new grocery list.
+
+    Note: items is not used rn. Can use it later if you want to add items as you create list.
+    """
+    try:
+        # Create a new grocery list with the current date
+        query = GroceryListDB.__table__.insert().values(name=name, date=func.now(), active_flag=True)
+        await db.execute(query)
+
+        # Get the current date in ISO format
+        current_date = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+
+        return {"created_at": current_date, "message": "Grocery list created successfully"}
+
+    except Exception as e:
+        return {"error": str(e)}
 
 async def deactivate_grocery_list(db, list_id):
     """
