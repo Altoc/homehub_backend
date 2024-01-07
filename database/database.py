@@ -1,5 +1,5 @@
 from databases import Database
-from sqlalchemy import func, create_engine, MetaData, select
+from sqlalchemy import func, create_engine, MetaData, select, join
 from datetime import datetime
 import logging
 from app.models.grocery_list import GroceryListDB, Base
@@ -33,8 +33,26 @@ async def get_active_grocery_lists(db):
     """
     Retrieves all grocery lists with active_flag set to truthy.
     """
-    query = GroceryListDB.__table__.select().where(GroceryListDB.__table__.c.active_flag == True)
-    result = await db.fetch_all(query)
+    join_condition = GroceryListDB.__table__.c.id == GroceryItemDB.__table__.c.list_id
+    query = select([GroceryListDB, GroceryItemDB]).select_from(join(GroceryListDB.__table__, GroceryItemDB.__table__, join_condition)).where(GroceryListDB.__table__.c.active_flag == True)
+    
+    ## query = GroceryListDB.__table__.select().where(GroceryListDB.__table__.c.active_flag == True)
+    rows = await db.fetch_all(query)
+    result = []
+    for row in rows:
+        if(result and result[-1][0] == row[0]):
+            result_row = result[-1]
+        else:
+            result_row = []
+            #grocery_list info
+            result_row.append(row[0]) #grocery_list.id
+            result_row.append(row[1]) #grocery_list.name
+            result_row.append(row[2]) #grocery_list.date
+            # result_row.append(row[3]) #grocery_list.active_flag
+            result.append(result_row)
+        #grocery_item info
+        result_row.append([row[4], row[5]]) #grocery_item.id, grocery_item.name
+        print(result_row)
     return result
 
 async def create_grocery_list(db, name: str, items: list):
