@@ -1,5 +1,5 @@
 from databases import Database
-from sqlalchemy import func, create_engine, MetaData, select, join
+from sqlalchemy import func, create_engine, MetaData, select, outerjoin
 from datetime import datetime
 import logging
 from app.models.grocery_list import GroceryListDB, Base
@@ -33,15 +33,18 @@ async def get_active_grocery_lists(db):
     """
     Retrieves all grocery lists with active_flag set to truthy.
     """
-    join_condition = GroceryListDB.__table__.c.id == GroceryItemDB.__table__.c.list_id
-    query = select([GroceryListDB, GroceryItemDB]).select_from(join(GroceryListDB.__table__, GroceryItemDB.__table__, join_condition)).where(GroceryListDB.__table__.c.active_flag == True)
+    # join_condition = GroceryListDB.__table__.c.id == GroceryItemDB.__table__.c.list_id
+    join_condition = outerjoin(GroceryListDB.__table__, GroceryItemDB.__table__, GroceryListDB.__table__.c.id == GroceryItemDB.__table__.c.list_id)
+    query = select([GroceryListDB, GroceryItemDB]).select_from(join_condition).where(GroceryListDB.__table__.c.active_flag == True)
     
     ## query = GroceryListDB.__table__.select().where(GroceryListDB.__table__.c.active_flag == True)
     rows = await db.fetch_all(query)
     result = []
     for row in rows:
+        # Add items to a created list
         if(result and result[-1][0] == row[0]):
             result_row = result[-1]
+        # List has yet to be created, create first
         else:
             result_row = []
             #grocery_list info
